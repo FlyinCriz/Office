@@ -1,0 +1,672 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Fristenrechner</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE work tool for exam prep in German administrative law: calm, exact, dense
+   IDEA a transit line: the Frist travels station to station (Aufgabe zur Post, Bekanntgabe, Fristbeginn, Fristende)
+   PICTURE the live Fristlauf drawn as a metro line, with the deadline month as a calendar beside the worked steps
+   COLOUR white / night #0e1116 ground, black ink, line blue #0a5cff, amber for shifts, red for Fristende, green for ok
+   TYPE Figtree 800 + Figtree
+   LAYOUT laptop: form column left, result right (date, line, steps + calendar); phone: title, result, form, sticky result bar */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#0e1116);--ink:light-dark(#0e1116,#eef1f5);--mute:light-dark(#566170,#9ba6b5);--line:light-dark(#e2e6eb,#252c36);--edge:light-dark(#c3cbd5,#3b4552);--panel:light-dark(#f3f5f8,#161b23);--blue:light-dark(#0a5cff,#5b93ff);--red:light-dark(#e6261f,#ff5c55);--onred:light-dark(#ffffff,#0e1116);--amber:#ffb400;--green:light-dark(#00a05a,#30cf87);--greenInk:light-dark(#00703f,#5be3a5)}
+:root[data-theme=light]{color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 Figtree,system-ui,-apple-system,"Segoe UI",sans-serif;overflow-x:clip}
+.band{padding-block:clamp(24px,3.5vw,48px);padding-left:max(5vw,16px,env(safe-area-inset-left,0px));padding-right:max(5vw,16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1240px;margin-inline:auto}
+.head{border-bottom:6px solid var(--blue);padding-bottom:20px}
+.head .wrap{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 40px}
+h1{font-size:clamp(36px,5vw,52px);line-height:1.05;letter-spacing:-.02em;font-weight:800;margin:0}
+.head p{margin:0;max-width:64ch;color:var(--mute)}
+h2,h3{letter-spacing:-.01em;line-height:1.2;margin:0 0 12px}
+h2{font-size:24px;font-weight:800}
+h3{font-size:17px;font-weight:700}
+.main{display:grid;gap:28px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:960px){.main{grid-template-columns:minmax(300px,370px) minmax(0,1fr);gap:44px;align-items:start}}
+@media(min-width:960px) and (min-height:860px){.result{position:sticky;top:16px}}
+@media(max-width:959px){.result{order:-1}}
+form{display:grid;gap:20px;background:var(--panel);border-radius:16px;padding:20px}
+fieldset{border:0;margin:0;padding:0;display:grid;gap:8px}
+legend{font-weight:800;font-size:15px;padding:0;margin-bottom:8px}
+label{font-size:14px;font-weight:600}
+select,input[type=date],input[type=number]{font:inherit;font-size:16px;width:100%;min-height:44px;padding:8px 12px;border:1.5px solid var(--edge);border-radius:10px;background:var(--bg);color:var(--ink)}
+select:focus,input:focus{outline:3px solid color-mix(in srgb,var(--blue) 40%,transparent);outline-offset:1px;border-color:var(--blue)}
+.row{display:grid;grid-template-columns:96px minmax(0,1fr);gap:8px}
+.seg{display:grid;grid-template-columns:1fr 1fr;border:1.5px solid var(--edge);border-radius:10px;overflow:hidden;background:var(--bg)}
+.seg label{position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:48px;padding:6px 8px;cursor:pointer;text-align:center;line-height:1.2}
+.seg small{font-weight:500;font-size:13px;opacity:.8}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label:has(input:checked){background:var(--ink);color:var(--bg)}
+.seg label:has(input:disabled){opacity:.4;cursor:not-allowed}
+.seg label:has(input:focus-visible){outline:3px solid var(--blue);outline-offset:-3px}
+.check{display:flex;gap:10px;align-items:flex-start;font-weight:500;line-height:1.35;cursor:pointer}
+.check input{width:20px;height:20px;margin:0;accent-color:var(--blue);flex:none}
+.hint{font-size:13px;color:var(--mute);margin:0;line-height:1.45}
+.note{font-size:14px;line-height:1.45;margin:0;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--amber) 18%,var(--bg))}
+button{font:inherit;font-weight:700;font-size:15px;min-height:44px;padding:8px 16px;border-radius:10px;border:1.5px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer}
+button:hover{background:var(--ink);color:var(--bg)}
+button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.result{container:res/inline-size}
+.lead{margin:0;font-size:17px;font-weight:600;color:var(--mute)}
+.big{font-size:clamp(32px,5.6vw,58px);font-weight:800;line-height:1.05;letter-spacing:-.02em;margin:4px 0 12px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0}
+.chip{display:inline-flex;align-items:center;font-size:14px;font-weight:700;padding:5px 12px;border-radius:999px;background:var(--panel);white-space:nowrap}
+.chip.red{background:var(--red);color:var(--onred)}
+.chip.amber{background:var(--amber);color:#0e1116}
+.chip.green{background:color-mix(in srgb,var(--green) 18%,var(--bg));color:var(--greenInk)}
+.shiftnote{margin:12px 0 0;font-size:15px;font-weight:600}
+.shiftnote::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--amber);margin-right:8px}
+.err{font-size:18px;font-weight:700;color:var(--red);margin:8px 0}
+.metro{list-style:none;margin:26px 0 4px;padding:0;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
+.metro li{position:relative;text-align:center;padding:36px 4px 0;font-size:13px;line-height:1.3}
+.metro li::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:22px;height:22px;border-radius:50%;background:var(--bg);border:5px solid var(--ink);z-index:1}
+.metro li.skip::before{border-color:var(--amber)}
+.metro li.end::before{border-color:var(--red);background:var(--red)}
+.metro li.ok::before{border-color:var(--green)}
+.metro li.late::before{border-color:var(--red)}
+.metro .ln{position:absolute;top:8px;left:50%;width:100%;height:6px;background:var(--blue)}
+.metro .ln.gap{background:var(--ink)}
+.metro .ln.post{background:repeating-linear-gradient(90deg,var(--amber) 0 10px,transparent 10px 16px)}
+.metro .ln.shift{background:var(--amber)}
+.metro .ln.late{background:repeating-linear-gradient(90deg,var(--red) 0 8px,transparent 8px 14px)}
+.metro em{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);font-style:normal;font-weight:800;font-size:14px;color:var(--blue);white-space:nowrap}
+.metro .ln.post em{color:var(--mute)}
+.metro b{display:block;font-weight:700}
+.metro span{color:var(--mute);white-space:nowrap}
+@container res (max-width:560px){
+.metro{grid-auto-flow:row;grid-auto-columns:auto;margin-top:20px}
+.metro li{text-align:left;padding:0 0 20px 40px;min-height:54px}
+.metro li.em{padding-bottom:44px}
+.metro li::before{left:0;transform:none}
+.metro .ln{left:8px;top:11px;width:6px;height:100%}
+.metro .ln.post{background:repeating-linear-gradient(180deg,var(--amber) 0 10px,transparent 10px 16px)}
+.metro .ln.late{background:repeating-linear-gradient(180deg,var(--red) 0 8px,transparent 8px 14px)}
+.metro em{left:32px;bottom:14px;transform:none}
+}
+.two{display:grid;gap:28px;grid-template-columns:minmax(0,1fr);margin-top:28px}
+@container res (min-width:700px){.two{grid-template-columns:minmax(0,1.45fr) minmax(250px,1fr)}}
+.steps{list-style:none;margin:0;padding:0}
+.steps li{position:relative;padding:12px 0 12px 32px;border-top:1px solid var(--line)}
+.steps li::before{content:"";position:absolute;left:0;top:16px;width:18px;height:18px;border-radius:50%;border:5px solid var(--c,var(--ink));background:var(--bg)}
+.steps .top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 12px;align-items:baseline}
+.steps b{font-weight:700}
+.steps time{font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
+.steps .nm{display:block;font-size:14px;font-weight:600;color:var(--blue)}
+.steps p{margin:2px 0 0;font-size:14px;color:var(--mute)}
+.calm+.calm{margin-top:18px}
+.calm h3{font-size:15px;margin-bottom:6px}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;font-size:13px;text-align:center}
+.cal .h{color:var(--mute);font-weight:700;padding:2px 0}
+.cal .d{position:relative;display:grid;place-items:center;aspect-ratio:1/0.86;border-radius:7px;font-variant-numeric:tabular-nums;font-weight:500}
+.cal .in{background:color-mix(in srgb,var(--blue) 11%,transparent)}
+.cal .we{color:var(--mute);background:var(--panel)}
+.cal .hol{background:color-mix(in srgb,var(--amber) 30%,transparent);font-weight:700}
+.cal .ev,.cal .ev2{box-shadow:inset 0 0 0 2px var(--ink)}
+.cal .ev2{box-shadow:inset 0 0 0 2px var(--amber)}
+.cal .raw{box-shadow:inset 0 0 0 2px var(--amber);text-decoration:line-through}
+.cal .end{background:var(--red);color:var(--onred);font-weight:800}
+.cal .eing{box-shadow:inset 0 0 0 2px var(--green)}
+.cal .today::after{content:"";position:absolute;bottom:3px;width:5px;height:5px;border-radius:50%;background:var(--green)}
+.legend{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--mute)}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:4px;margin-right:6px;vertical-align:-2px}
+.lg.in{background:color-mix(in srgb,var(--blue) 18%,transparent)}
+.lg.we{background:var(--panel);box-shadow:inset 0 0 0 1px var(--edge)}
+.lg.hol{background:color-mix(in srgb,var(--amber) 45%,transparent)}
+.lg.ev{box-shadow:inset 0 0 0 2px var(--ink)}
+.lg.end{background:var(--red)}
+.lg.today{width:8px!important;height:8px!important;border-radius:50%!important;background:var(--green);vertical-align:1px!important}
+.lower{border-top:1px solid var(--line)}
+.lower .wrap{display:grid;gap:36px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:960px){.lower .wrap{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}}
+.ktext{font-size:16px;line-height:1.7;background:var(--panel);border-radius:16px;padding:20px 22px;margin:0 0 12px;max-width:78ch}
+.copyrow{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+td{padding:7px 8px;border-top:1px solid var(--line);vertical-align:top}
+td:first-child{white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:600;width:1%}
+tr.inr td{background:color-mix(in srgb,var(--blue) 10%,transparent)}
+td small{color:var(--blue);font-weight:700;font-size:13px;white-space:nowrap}
+.rules{background:var(--panel)}
+.cols{display:grid;gap:28px;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+.cols h3::before{content:"";display:inline-block;width:14px;height:14px;border-radius:50%;border:4px solid var(--blue);background:var(--bg);margin-right:10px;vertical-align:-1px}
+.cols p{margin:0 0 8px;font-size:15px}
+.foot{margin:28px 0 0;font-size:13px;color:var(--mute)}
+.bar{display:none}
+@media(max-width:959px){
+body{padding-bottom:72px}
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:5;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;justify-content:center;padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:var(--ink);color:var(--bg);font-size:14px;transform:translateY(110%);transition:transform .2s}
+.bar.on{transform:none}
+.bar b{font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){.bar{transition:none}}
+@media(max-width:600px){.row{grid-template-columns:84px minmax(0,1fr)}form{padding:16px}}
+</style>
+</head>
+<body>
+<header class="band head">
+  <div class="wrap">
+    <h1>Fristenrechner</h1>
+    <p>Fristende, Bekanntgabefiktion und Verschiebung auf den nächsten Werktag nach §§ 187 ff. BGB, § 31 VwVfG und § 57 VwGO – mit Feiertagen aller Länder und Klausurformulierung im Gutachtenstil.</p>
+  </div>
+</header>
+
+<main class="band">
+  <div class="wrap main">
+    <form id="f" autocomplete="off">
+      <fieldset>
+        <legend>Was soll berechnet werden?</legend>
+        <label for="preset">Vorlage</label>
+        <select id="preset"></select>
+        <p class="note" id="pNote" hidden></p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Fristauslösendes Ereignis</legend>
+        <label for="mode">Bekanntgabe bzw. Zustellung</label>
+        <select id="mode">
+          <option value="direct">Tatsächliches Datum (Zugang, Zustellung, Kenntnis …)</option>
+          <option value="post">Einfacher Brief – Bekanntgabefiktion</option>
+          <option value="elek">Elektronisch übermittelt – Bekanntgabefiktion</option>
+          <option value="ein">Übergabe-Einschreiben – Zustellungsfiktion</option>
+        </select>
+        <p class="hint" id="modeHint"></p>
+        <label for="date" id="dateL">Aufgabe zur Post am</label>
+        <input type="date" id="date" required>
+        <label class="check" id="fikWrap"><input type="checkbox" id="fik" checked><span>Fiktionstag fällt auf Sa/So/Feiertag: Bekanntgabe am nächsten Werktag <span class="hint">(str.; für § 122 Abs. 2 AO st. Rspr.)</span></span></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Frist</legend>
+        <div class="row">
+          <input type="number" id="n" min="1" max="999" step="1" inputmode="numeric" aria-label="Fristdauer">
+          <select id="unit" aria-label="Einheit">
+            <option value="d">Tage</option>
+            <option value="w">Wochen</option>
+            <option value="m">Monate</option>
+            <option value="y">Jahre</option>
+          </select>
+        </div>
+        <div class="seg" role="radiogroup" aria-label="Fristart">
+          <label><input type="radio" name="kind" value="e" id="ke" checked>Ereignisfrist<small>§ 187 Abs. 1 BGB</small></label>
+          <label><input type="radio" name="kind" value="b" id="kb">Beginnfrist<small>§ 187 Abs. 2 BGB</small></label>
+        </div>
+        <label class="check" id="rbbWrap"><input type="checkbox" id="rbb"><span>Rechtsbehelfsbelehrung fehlt oder ist unrichtig: Jahresfrist <span class="hint" id="rbbNorm"></span></span></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Ort und Fristende</legend>
+        <label for="land">Bundesland (Sitz der Behörde bzw. des Gerichts)</label>
+        <select id="land"></select>
+        <p class="hint" id="landHint"></p>
+        <label for="reg">Fristenregelung</label>
+        <select id="reg"></select>
+        <label class="check"><input type="checkbox" id="shift" checked><span>Fristende auf Sa/So/Feiertag: Ablauf des nächsten Werktags <span class="hint">(nicht bei § 31 Abs. 3 S. 2, Abs. 5 VwVfG)</span></span></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Fristwahrung prüfen (optional)</legend>
+        <label for="eing" id="eingL">Eingang bei Behörde bzw. Gericht am</label>
+        <input type="date" id="eing">
+      </fieldset>
+
+      <div><button type="button" id="reset">Zurücksetzen</button></div>
+    </form>
+
+    <section class="result" aria-live="polite">
+      <p class="err" id="err" hidden></p>
+      <div id="out">
+        <p class="lead" id="lead">Frist endet am</p>
+        <h2 class="big" id="big">–</h2>
+        <p class="chips" id="chips"></p>
+        <p class="shiftnote" id="shiftNote" hidden></p>
+        <ol class="metro" id="metro" aria-label="Fristlauf"></ol>
+        <div class="two">
+          <div>
+            <h3>Fristberechnung</h3>
+            <ol class="steps" id="steps"></ol>
+          </div>
+          <div>
+            <div id="cal"></div>
+            <ul class="legend">
+              <li><i class="lg in"></i>Fristlauf</li>
+              <li><i class="lg we"></i>Wochenende</li>
+              <li><i class="lg hol"></i>Feiertag</li>
+              <li><i class="lg ev"></i>Ereignis</li>
+              <li><i class="lg end"></i>Fristende</li>
+              <li><i class="lg today"></i>Heute</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<section class="band lower">
+  <div class="wrap">
+    <div>
+      <h2>Klausurformulierung</h2>
+      <p class="ktext" id="ktext"></p>
+      <div class="copyrow"><button type="button" id="copy">Text kopieren</button><span class="hint" id="copyMsg" role="status"></span></div>
+    </div>
+    <div>
+      <h2 id="holH">Gesetzliche Feiertage</h2>
+      <div class="scroll"><table><tbody id="holT"></tbody></table></div>
+      <p class="hint" style="margin-top:10px">Heiligabend und Silvester sind keine gesetzlichen Feiertage; eine Frist kann dort enden.</p>
+    </div>
+  </div>
+</section>
+
+<section class="band rules">
+  <div class="wrap">
+    <h2>Die Regeln in Kürze</h2>
+    <div class="cols">
+      <div>
+        <h3>Ereignis- oder Beginnfrist</h3>
+        <p><b>§ 187 Abs. 1 BGB:</b> Ist ein Ereignis maßgeblich (Bekanntgabe, Zustellung, Kenntnis), wird dessen Tag nicht mitgerechnet. Die Frist beginnt am Folgetag um 0:00 Uhr.</p>
+        <p><b>§ 187 Abs. 2 BGB:</b> Ist der Beginn eines Tages maßgeblich (z. B. „ab dem 1. März“), zählt dieser Tag mit.</p>
+      </div>
+      <div>
+        <h3>Fristende</h3>
+        <p><b>§ 188 Abs. 1 BGB:</b> Tagesfristen enden mit Ablauf des letzten Tages.</p>
+        <p><b>§ 188 Abs. 2 BGB:</b> Wochen-, Monats- und Jahresfristen enden mit Ablauf des Tages, der durch Benennung oder Zahl dem Ereignistag entspricht (Beginnfrist: am Vortag). <b>§ 188 Abs. 3 BGB:</b> Fehlt dieser Tag, endet die Frist am Monatsletzten.</p>
+      </div>
+      <div>
+        <h3>Wochenende und Feiertage</h3>
+        <p><b>§ 193 BGB, § 31 Abs. 3 S. 1 VwVfG, § 222 Abs. 2 ZPO:</b> Endet die Frist an einem Samstag, Sonntag oder gesetzlichen Feiertag, läuft sie bis zum Ablauf des nächsten Werktags. Verschoben wird nur das Ende, nie der Beginn.</p>
+        <p>Ausnahmen: Fristende unter Hinweis auf die Vorschrift mitgeteilt (§ 31 Abs. 3 S. 2 VwVfG), behördlich gesetzter Termin (§ 31 Abs. 5 VwVfG).</p>
+      </div>
+      <div>
+        <h3>Bekanntgabefiktion</h3>
+        <p>Seit 1.1.2025 gilt ein einfacher Brief am <b>vierten</b> Tag nach Aufgabe zur Post, ein elektronischer VA am vierten Tag nach Absendung als bekannt gegeben (§ 41 Abs. 2 S. 1, 2 VwVfG i.V.m. § 1 Abs. 1 NVwVfG; vorher dritter Tag). Für das Übergabe-Einschreiben gilt dasselbe (§ 4 Abs. 2 S. 2 VwZG).</p>
+        <p>Bei späterem Zugang zählt dieser; im Zweifel muss die Behörde Zugang und Zeitpunkt beweisen (§ 41 Abs. 2 S. 3 VwVfG).</p>
+      </div>
+    </div>
+    <p class="foot">Lernhilfe zur Prüfungsvorbereitung, keine Rechtsberatung. Gemeindliche Sonderfeiertage (z. B. Fronleichnam in einzelnen Gemeinden Sachsens und Thüringens) sind nicht erfasst.</p>
+  </div>
+</section>
+
+<div class="bar" id="bar" aria-hidden="true"><span id="barName">Fristende</span><b id="barDate">–</b><span id="barLeft"></span></div>
+
+<script>
+{
+// CORE-START
+const DAY = 864e5;
+const dn = (y, m, d) => Math.round(Date.UTC(y, m - 1, d) / DAY);
+const ymd = n => { const t = new Date(n * DAY); return [t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate()]; };
+const wd = n => new Date(n * DAY).getUTCDay();
+const dim = (y, m) => new Date(Date.UTC(y, m, 0)).getUTCDate();
+const WD = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+const WS = ['So.', 'Mo.', 'Di.', 'Mi.', 'Do.', 'Fr.', 'Sa.'];
+const MN = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+const p2 = x => String(x).padStart(2, '0');
+const fmtN = n => { const [y, m, d] = ymd(n); return `${p2(d)}.${p2(m)}.${y}`; };
+const fmtS = n => `${WS[wd(n)]}, ${fmtN(n)}`;
+const fmtK = n => `${fmtN(n)} (${WD[wd(n)]})`;
+const fmtL = n => { const [y, m, d] = ymd(n); return `${WD[wd(n)]}, ${d}. ${MN[m - 1]} ${y}`; };
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+
+function easter(y) {
+  const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4;
+  const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const x = h + l - 7 * m + 114;
+  return dn(y, Math.floor(x / 31), (x % 31) + 1);
+}
+
+const LANDS = [['BW', 'Baden-Württemberg'], ['BY', 'Bayern (überwiegend kath. Gemeinde)'], ['BYE', 'Bayern (übrige Gemeinden)'], ['BYA', 'Bayern – Stadt Augsburg'], ['BE', 'Berlin'], ['BB', 'Brandenburg'], ['HB', 'Bremen'], ['HH', 'Hamburg'], ['HE', 'Hessen'], ['MV', 'Mecklenburg-Vorpommern'], ['NI', 'Niedersachsen'], ['NW', 'Nordrhein-Westfalen'], ['RP', 'Rheinland-Pfalz'], ['SL', 'Saarland'], ['SN', 'Sachsen'], ['ST', 'Sachsen-Anhalt'], ['SH', 'Schleswig-Holstein'], ['TH', 'Thüringen']];
+const LN = Object.fromEntries(LANDS);
+const inLand = L => L === 'BYA' ? 'Augsburg' : L.startsWith('BY') ? 'Bayern' : LN[L];
+
+function holidays(y, L) {
+  const E = easter(y), h = new Map(), add = (n, name) => h.set(n, name), is = (...ls) => ls.includes(L);
+  const by = is('BY', 'BYE', 'BYA');
+  add(dn(y, 1, 1), 'Neujahr');
+  if (is('BW', 'ST') || by) add(dn(y, 1, 6), 'Heilige Drei Könige');
+  if ((is('BE') && y >= 2019) || (is('MV') && y >= 2023)) add(dn(y, 3, 8), 'Internationaler Frauentag');
+  add(E - 2, 'Karfreitag');
+  if (is('BB')) add(E, 'Ostersonntag');
+  add(E + 1, 'Ostermontag');
+  add(dn(y, 5, 1), 'Tag der Arbeit');
+  if (is('BE') && (y === 2020 || y === 2025)) add(dn(y, 5, 8), 'Tag der Befreiung (einmalig)');
+  add(E + 39, 'Christi Himmelfahrt');
+  if (is('BB')) add(E + 49, 'Pfingstsonntag');
+  add(E + 50, 'Pfingstmontag');
+  if (is('BW', 'HE', 'NW', 'RP', 'SL') || by) add(E + 60, 'Fronleichnam');
+  if (is('BYA')) add(dn(y, 8, 8), 'Augsburger Hohes Friedensfest');
+  if (is('SL', 'BY', 'BYA')) add(dn(y, 8, 15), 'Mariä Himmelfahrt');
+  if (is('TH') && y >= 2019) add(dn(y, 9, 20), 'Weltkindertag');
+  if (y >= 1990) add(dn(y, 10, 3), 'Tag der Deutschen Einheit');
+  if (is('BB', 'MV', 'SN', 'ST', 'TH') || (is('HB', 'HH', 'NI', 'SH') && y >= 2018) || y === 2017) add(dn(y, 10, 31), 'Reformationstag');
+  if (is('BW', 'NW', 'RP', 'SL') || by) add(dn(y, 11, 1), 'Allerheiligen');
+  if (is('SN') || y < 1995) { let b = dn(y, 11, 22); while (wd(b) !== 3) b--; add(b, 'Buß- und Bettag'); }
+  add(dn(y, 12, 25), '1. Weihnachtstag');
+  add(dn(y, 12, 26), '2. Weihnachtstag');
+  return h;
+}
+const HC = {};
+const hol = (n, L) => { const k = ymd(n)[0] + L; if (!HC[k]) HC[k] = holidays(ymd(n)[0], L); return HC[k].get(n); };
+function why(n, L) {
+  const h = hol(n, L), w = wd(n);
+  if (h) return { t: 'h', name: h };
+  if (w === 6) return { t: 'sa' };
+  if (w === 0) return { t: 'so' };
+  return null;
+}
+function nextWork(n, L) { const skipped = []; while (why(n, L)) { skipped.push(n); n++; } return { n, skipped }; }
+const whyS = w => w.t === 'h' ? w.name : w.t === 'sa' ? 'Samstag' : 'Sonntag';
+const whyK = (w, n, L) => {
+  if (w.t === 'h') { const d = wd(n); return `${d === 0 ? 'ein Sonntag und zugleich ' : d === 6 ? 'ein Samstag und zugleich ' : 'ein '}gesetzlicher Feiertag in ${inLand(L)} (${w.name})`; }
+  return w.t === 'sa' ? 'ein Samstag' : 'ein Sonntag';
+};
+
+// start = Ereignistag (kind 'e') bzw. Anfangstag (kind 'b')
+function endOf(start, n, u, kind) {
+  if (u === 'd') return { raw: kind === 'e' ? start + n : start + n - 1 };
+  if (u === 'w') return { raw: kind === 'e' ? start + 7 * n : start + 7 * n - 1 };
+  const months = u === 'y' ? 12 * n : n;
+  const [y, m, d] = ymd(start);
+  const t = m - 1 + months, ty = y + Math.floor(t / 12), tm = (t % 12) + 1, md = dim(ty, tm);
+  if (kind === 'e') return d > md ? { raw: dn(ty, tm, md), m3: true } : { raw: dn(ty, tm, d) };
+  if (d === 1) return { raw: dn(ty, tm, 1) - 1 };
+  if (d - 1 > md) return { raw: dn(ty, tm, md), m3: true };
+  return { raw: dn(ty, tm, d - 1) };
+}
+
+const BGBb = (u, k) => k === 'e' ? '§ 187 Abs. 1 BGB' : '§ 187 Abs. 2 S. 1 BGB';
+const BGBe = (u, k, m3) => m3 ? '§ 188 Abs. 3 BGB' : u === 'd' ? '§ 188 Abs. 1 BGB' : k === 'e' ? '§ 188 Abs. 2 Alt. 1 BGB' : '§ 188 Abs. 2 Alt. 2 BGB';
+const REG = {
+  vwvfg: { l: 'Verwaltungsverfahren – § 31 VwVfG', chain: '§ 31 Abs. 1 VwVfG i.V.m. § 1 Abs. 1 NVwVfG und §§ 187 ff. BGB', b: BGBb, e: BGBe, s: '§ 31 Abs. 3 S. 1 VwVfG', fam: 'vw' },
+  vwgo: { l: 'Verwaltungsprozess – § 57 VwGO', chain: '§ 57 Abs. 2 VwGO i.V.m. § 222 Abs. 1 ZPO und §§ 187 ff. BGB', b: BGBb, e: BGBe, s: '§ 57 Abs. 2 VwGO i.V.m. § 222 Abs. 2 ZPO', fam: 'vw' },
+  sgg: { l: 'Sozialrecht – § 64 SGG', chain: '§ 64 SGG', b: () => '§ 64 Abs. 1 SGG', e: (u, k, m3) => m3 ? '§ 64 Abs. 2 S. 2 SGG' : '§ 64 Abs. 2 S. 1 SGG', s: '§ 64 Abs. 3 SGG', fam: 'sg', eo: true },
+  ao: { l: 'Abgabenrecht – § 108 AO', chain: '§ 108 Abs. 1 AO i.V.m. §§ 187 ff. BGB', b: BGBb, e: BGBe, s: '§ 108 Abs. 3 AO', fam: 'ao' },
+  owig: { l: 'Bußgeldverfahren – § 46 OWiG, §§ 42 f. StPO', chain: '§ 46 Abs. 1 OWiG i.V.m. §§ 42, 43 StPO', b: u => u === 'd' ? '§ 42 StPO' : 'vgl. § 43 Abs. 1 StPO', e: (u, k, m3) => u === 'd' ? '§ 42 StPO' : m3 ? '§ 43 Abs. 1 Hs. 2 StPO' : '§ 43 Abs. 1 Hs. 1 StPO', s: '§ 43 Abs. 2 StPO', fam: 'ow', eo: true },
+  bgb: { l: 'Zivilrecht – §§ 186 ff. BGB', chain: '§§ 186 ff. BGB', b: BGBb, e: BGBe, s: '§ 193 BGB', fam: 'bgb' }
+};
+const FAM = {
+  vw: { post: '§ 41 Abs. 2 S. 1 VwVfG i.V.m. § 1 Abs. 1 NVwVfG', elek: '§ 41 Abs. 2 S. 2 VwVfG i.V.m. § 1 Abs. 1 NVwVfG', zug: '§ 41 Abs. 2 S. 3 VwVfG', ein: '§ 4 Abs. 2 S. 2 VwZG i.V.m. § 1 Abs. 1 NVwZG', fs: '§ 31 Abs. 3 S. 1 VwVfG', str: true },
+  ao: { post: '§ 122 Abs. 2 Nr. 1 AO', elek: '§ 122 Abs. 2a AO', zug: '§ 122 Abs. 2 Hs. 2 AO', zugE: '§ 122 Abs. 2a Hs. 2 AO', ein: '§ 122 Abs. 5 S. 2 AO i.V.m. § 4 Abs. 2 S. 2 VwZG', fs: '§ 108 Abs. 3 AO (BFH, Urt. v. 14.10.2003 – IX R 68/98)', str: false },
+  sg: { post: '§ 37 Abs. 2 S. 1 SGB X', elek: '§ 37 Abs. 2 S. 2 SGB X', zug: '§ 37 Abs. 2 S. 3 SGB X', ein: '§ 65 Abs. 1 SGB X i.V.m. § 4 Abs. 2 S. 2 VwZG', fs: '§ 26 Abs. 3 S. 1 SGB X', str: true },
+  ow: { ein: '§ 51 Abs. 1 S. 1 OWiG, § 1 Abs. 1 NVwZG i.V.m. § 4 Abs. 2 S. 2 VwZG', fs: '§ 43 Abs. 2 StPO', str: true },
+  bgb: {}
+};
+const FM = { vw: ['direct', 'post', 'elek', 'ein'], ao: ['direct', 'post', 'elek', 'ein'], sg: ['direct', 'post', 'elek', 'ein'], ow: ['direct', 'ein'], bgb: ['direct'] };
+
+const BEK = { ev: 'die Bekanntgabe des Verwaltungsakts', tg: 'der Bekanntgabe', st: 'Bekanntgabe', dl: 'Bekanntgabe (tatsächlicher Zugang) am', doc: 'Der Bescheid' };
+const P = [
+  { g: 'Allgemein', id: 'free', l: 'Freie Berechnung', reg: 'vwvfg', n: 2, u: 'w', m: 'direct', name: 'Frist', ev: 'das fristauslösende Ereignis', tg: 'des Ereignisses', st: 'Ereignis', dl: 'Tag des Ereignisses', rb: ['Die', 'vorgenommene', 'Handlung'], el: 'Handlung vorgenommen am' },
+  { g: 'Widerspruch und Klage (VwGO)', id: 'wspr', l: 'Widerspruchsfrist – § 70 Abs. 1 S. 1 VwGO', reg: 'vwgo', n: 1, u: 'm', m: 'post', ...BEK, name: 'Widerspruchsfrist', ob: 'Der Widerspruch müsste fristgerecht erhoben worden sein.', rule: 'Gem. § 70 Abs. 1 S. 1 VwGO ist der Widerspruch innerhalb eines Monats, nachdem der Verwaltungsakt dem Beschwerten bekannt gegeben worden ist, zu erheben.', calc: 'Ob § 57 Abs. 2 VwGO (analog) oder § 79 Hs. 1 i.V.m. § 31 Abs. 1 VwVfG heranzuziehen ist, kann dahinstehen, da beide auf §§ 187 ff. BGB verweisen.', rbb: '§ 70 Abs. 2 i.V.m. § 58 Abs. 2 S. 1 VwGO', wv: '§ 70 Abs. 2 i.V.m. § 60 Abs. 1 bis 4 VwGO', rb: ['Der', 'eingegangene', 'Widerspruch'], el: 'Widerspruch eingegangen am', note: 'Niedersachsen: Das Vorverfahren entfällt grundsätzlich (§ 68 Abs. 1 S. 2 Hs. 1 VwGO i.V.m. § 80 NJG). Erst prüfen, ob der Widerspruch überhaupt statthaft ist.' },
+  { id: 'klage', l: 'Klagefrist ohne Vorverfahren – § 74 Abs. 1 S. 2 VwGO', reg: 'vwgo', n: 1, u: 'm', m: 'post', ...BEK, name: 'Klagefrist', ob: 'Die Klage müsste fristgerecht erhoben worden sein.', rule: 'Da ein Vorverfahren nicht stattfindet (§ 68 Abs. 1 S. 2 Hs. 1 VwGO i.V.m. § 80 NJG), muss die Klage gem. § 74 Abs. 1 S. 2 VwGO (bei der Verpflichtungsklage i.V.m. § 74 Abs. 2 VwGO) innerhalb eines Monats nach Bekanntgabe des Verwaltungsakts erhoben werden.', rbb: '§ 58 Abs. 2 S. 1 VwGO', wv: '§ 60 VwGO', rb: ['Die', 'eingegangene', 'Klage'], el: 'Klage eingegangen am' },
+  { id: 'klageWB', l: 'Klagefrist nach Widerspruchsbescheid – § 74 Abs. 1 S. 1 VwGO', reg: 'vwgo', n: 1, u: 'm', m: 'ein', modes: ['direct', 'ein'], name: 'Klagefrist', ev: 'die Zustellung des Widerspruchsbescheids', tg: 'der Zustellung', st: 'Zustellung', dl: 'Zustellung am (z. B. Datum der Zustellungsurkunde)', doc: 'Der Widerspruchsbescheid', ein: '§ 73 Abs. 3 S. 2 VwGO i.V.m. § 4 Abs. 2 S. 2 VwZG', ob: 'Die Klage müsste fristgerecht erhoben worden sein.', rule: 'Gem. § 74 Abs. 1 S. 1 VwGO (bei der Verpflichtungsklage i.V.m. § 74 Abs. 2 VwGO) muss die Klage innerhalb eines Monats nach Zustellung des Widerspruchsbescheids erhoben werden.', rbb: '§ 58 Abs. 2 S. 1 VwGO', wv: '§ 60 VwGO', rb: ['Die', 'eingegangene', 'Klage'], el: 'Klage eingegangen am' },
+  { id: 'zul', l: 'Antrag auf Zulassung der Berufung – § 124a Abs. 4 S. 1 VwGO', reg: 'vwgo', n: 1, u: 'm', m: 'direct', modes: ['direct'], name: 'Antragsfrist', ev: 'die Zustellung des vollständigen Urteils', tg: 'der Zustellung', st: 'Zustellung', dl: 'Zustellung des Urteils am', ob: 'Der Antrag auf Zulassung der Berufung müsste fristgerecht gestellt worden sein.', rule: 'Gem. § 124a Abs. 4 S. 1 VwGO ist die Zulassung der Berufung innerhalb eines Monats nach Zustellung des vollständigen Urteils zu beantragen.', rbb: '§ 58 Abs. 2 S. 1 VwGO', wv: '§ 60 VwGO', rb: ['Der', 'eingegangene', 'Antrag'], el: 'Antrag eingegangen am' },
+  { id: 'zulB', l: 'Begründung des Zulassungsantrags – § 124a Abs. 4 S. 4 VwGO', reg: 'vwgo', n: 2, u: 'm', m: 'direct', modes: ['direct'], name: 'Begründungsfrist', ev: 'die Zustellung des vollständigen Urteils', tg: 'der Zustellung', st: 'Zustellung', dl: 'Zustellung des Urteils am', ob: 'Der Zulassungsantrag müsste fristgerecht begründet worden sein.', rule: 'Gem. § 124a Abs. 4 S. 4 VwGO sind die Gründe, aus denen die Berufung zuzulassen ist, innerhalb von zwei Monaten nach Zustellung des vollständigen Urteils darzulegen.', wv: '§ 60 Abs. 1, 2 S. 1 Hs. 2 VwGO', rb: ['Die', 'eingegangene', 'Begründung'], el: 'Begründung eingegangen am' },
+  { id: 'besch', l: 'Beschwerde – § 147 Abs. 1 S. 1 VwGO', reg: 'vwgo', n: 2, u: 'w', m: 'direct', modes: ['direct'], name: 'Beschwerdefrist', ev: 'die Bekanntgabe der Entscheidung', tg: 'der Bekanntgabe', st: 'Bekanntgabe', dl: 'Bekanntgabe der Entscheidung am', ob: 'Die Beschwerde müsste fristgerecht eingelegt worden sein.', rule: 'Gem. § 147 Abs. 1 S. 1 VwGO ist die Beschwerde innerhalb von zwei Wochen nach Bekanntgabe der Entscheidung einzulegen.', rbb: '§ 58 Abs. 2 S. 1 VwGO', wv: '§ 60 VwGO', rb: ['Die', 'eingegangene', 'Beschwerde'], el: 'Beschwerde eingegangen am' },
+  { id: 'beschB', l: 'Beschwerdebegründung im Eilverfahren – § 146 Abs. 4 S. 1 VwGO', reg: 'vwgo', n: 1, u: 'm', m: 'direct', modes: ['direct'], name: 'Begründungsfrist', ev: 'die Bekanntgabe der Entscheidung', tg: 'der Bekanntgabe', st: 'Bekanntgabe', dl: 'Bekanntgabe der Entscheidung am', ob: 'Die Beschwerde müsste fristgerecht begründet worden sein.', rule: 'Gem. § 146 Abs. 4 S. 1 VwGO ist die Beschwerde gegen Beschlüsse im Verfahren des vorläufigen Rechtsschutzes innerhalb eines Monats nach Bekanntgabe der Entscheidung zu begründen.', wv: '§ 60 VwGO', rb: ['Die', 'eingegangene', 'Begründung'], el: 'Begründung eingegangen am' },
+  { id: 'wesG', l: 'Wiedereinsetzung (Prozess) – § 60 Abs. 2 S. 1 VwGO', reg: 'vwgo', n: 2, u: 'w', m: 'direct', modes: ['direct'], name: 'Antragsfrist', ev: 'der Wegfall des Hindernisses', tg: 'des Wegfalls des Hindernisses', st: 'Wegfall Hindernis', dl: 'Wegfall des Hindernisses am', ob: 'Der Antrag auf Wiedereinsetzung in den vorigen Stand müsste fristgerecht gestellt worden sein.', rule: 'Gem. § 60 Abs. 2 S. 1 Hs. 1 VwGO ist der Antrag binnen zwei Wochen nach Wegfall des Hindernisses zu stellen.', rb: ['Der', 'eingegangene', 'Antrag'], el: 'Antrag eingegangen am', note: 'Bei Versäumung einer Begründungsfrist (z. B. § 124a Abs. 4 S. 4 VwGO) beträgt die Antragsfrist einen Monat (§ 60 Abs. 2 S. 1 Hs. 2 VwGO). Nach einem Jahr ist der Antrag grundsätzlich unzulässig (§ 60 Abs. 3 VwGO).' },
+  { g: 'Verwaltungsverfahren (VwVfG)', id: 'wes', l: 'Wiedereinsetzung – § 32 Abs. 2 S. 1 VwVfG', reg: 'vwvfg', n: 2, u: 'w', m: 'direct', modes: ['direct'], name: 'Antragsfrist', ev: 'der Wegfall des Hindernisses', tg: 'des Wegfalls des Hindernisses', st: 'Wegfall Hindernis', dl: 'Wegfall des Hindernisses am', ob: 'Der Antrag auf Wiedereinsetzung in den vorigen Stand müsste fristgerecht gestellt worden sein.', rule: 'Gem. § 32 Abs. 2 S. 1 VwVfG ist der Antrag innerhalb von zwei Wochen nach Wegfall des Hindernisses zu stellen.', rb: ['Der', 'eingegangene', 'Antrag'], el: 'Antrag eingegangen am', note: 'Ausschlussfrist: Nach einem Jahr seit dem Ende der versäumten Frist kann Wiedereinsetzung grundsätzlich nicht mehr beantragt werden (§ 32 Abs. 3 VwVfG).' },
+  { id: 'rn', l: 'Rücknahmefrist – § 48 Abs. 4 S. 1 VwVfG', reg: 'vwvfg', n: 1, u: 'y', m: 'direct', modes: ['direct'], name: 'Rücknahmefrist', ev: 'die Kenntnisnahme der Behörde von den rücknahmebegründenden Tatsachen', tg: 'der Kenntnisnahme', st: 'Kenntnis', dl: 'Kenntnisnahme der Behörde am', ob: 'Die Rücknahme müsste innerhalb der Jahresfrist des § 48 Abs. 4 S. 1 VwVfG erfolgt sein.', rule: 'Erhält die Behörde von Tatsachen Kenntnis, welche die Rücknahme eines rechtswidrigen begünstigenden Verwaltungsakts rechtfertigen, ist die Rücknahme gem. § 48 Abs. 4 S. 1 VwVfG nur innerhalb eines Jahres seit dem Zeitpunkt der Kenntnisnahme zulässig.', rb: ['Die', 'erfolgte', 'Rücknahme'], el: 'Rücknahme erfolgt am', note: 'Entscheidungsfrist: Sie beginnt erst, wenn die Behörde alle für die Rücknahme erheblichen Tatsachen vollständig kennt (BVerwGE 70, 356 – GrSen). Keine Frist bei arglistiger Täuschung, Drohung oder Bestechung (§ 48 Abs. 4 S. 2 VwVfG).' },
+  { id: 'wr', l: 'Widerrufsfrist – § 49 Abs. 2 S. 2 i.V.m. § 48 Abs. 4 VwVfG', reg: 'vwvfg', n: 1, u: 'y', m: 'direct', modes: ['direct'], name: 'Widerrufsfrist', ev: 'die Kenntnisnahme der Behörde von den widerrufsbegründenden Tatsachen', tg: 'der Kenntnisnahme', st: 'Kenntnis', dl: 'Kenntnisnahme der Behörde am', ob: 'Der Widerruf müsste innerhalb der Jahresfrist erfolgt sein.', rule: 'Gem. § 49 Abs. 2 S. 2 i.V.m. § 48 Abs. 4 S. 1 VwVfG ist der Widerruf eines rechtmäßigen begünstigenden Verwaltungsakts nur innerhalb eines Jahres seit Kenntnisnahme der Widerrufstatsachen zulässig.', rb: ['Der', 'erfolgte', 'Widerruf'], el: 'Widerruf erfolgt am' },
+  { id: 'wa', l: 'Wiederaufgreifen – § 51 Abs. 3 VwVfG', reg: 'vwvfg', n: 3, u: 'm', m: 'direct', modes: ['direct'], name: 'Antragsfrist', ev: 'die Kenntnis des Betroffenen vom Grund für das Wiederaufgreifen', tg: 'der Kenntniserlangung', st: 'Kenntnis', dl: 'Kenntnis vom Wiederaufgreifensgrund am', ob: 'Der Antrag auf Wiederaufgreifen des Verfahrens müsste fristgerecht gestellt worden sein.', rule: 'Gem. § 51 Abs. 3 VwVfG muss der Antrag binnen drei Monaten gestellt werden; die Frist beginnt mit dem Tag, an dem der Betroffene von dem Grund für das Wiederaufgreifen Kenntnis erhalten hat.', rb: ['Der', 'eingegangene', 'Antrag'], el: 'Antrag eingegangen am' },
+  { g: 'Weitere Rechtsgebiete', id: 'owi', l: 'Einspruch gegen Bußgeldbescheid – § 67 Abs. 1 S. 1 OWiG', reg: 'owig', n: 2, u: 'w', m: 'ein', modes: ['direct', 'ein'], name: 'Einspruchsfrist', ev: 'die Zustellung des Bußgeldbescheids', tg: 'der Zustellung', st: 'Zustellung', dl: 'Zustellung am (z. B. Datum der Zustellungsurkunde)', doc: 'Der Bußgeldbescheid', ob: 'Der Einspruch müsste fristgerecht eingelegt worden sein.', rule: 'Gem. § 67 Abs. 1 S. 1 OWiG kann der Betroffene innerhalb von zwei Wochen nach Zustellung des Bußgeldbescheids Einspruch einlegen.', wv: '§ 52 Abs. 1 OWiG i.V.m. §§ 44 ff. StPO', rb: ['Der', 'eingegangene', 'Einspruch'], el: 'Einspruch eingegangen am' },
+  { id: 'sgg', l: 'Widerspruch Sozialrecht – § 84 Abs. 1 S. 1 SGG', reg: 'sgg', n: 1, u: 'm', m: 'post', ...BEK, name: 'Widerspruchsfrist', ob: 'Der Widerspruch müsste fristgerecht erhoben worden sein.', rule: 'Gem. § 84 Abs. 1 S. 1 SGG ist der Widerspruch binnen eines Monats, nachdem der Verwaltungsakt dem Beschwerten bekannt gegeben worden ist, zu erheben.', calc: 'Ob stattdessen § 26 Abs. 1 SGB X i.V.m. §§ 187 ff. BGB heranzuziehen ist, kann dahinstehen, da beide Wege zum selben Ergebnis führen.', rbb: '§ 84 Abs. 2 S. 3 i.V.m. § 66 Abs. 2 S. 1 SGG', wv: '§ 84 Abs. 2 S. 3 i.V.m. § 67 SGG', rb: ['Der', 'eingegangene', 'Widerspruch'], el: 'Widerspruch eingegangen am' },
+  { id: 'ao', l: 'Einspruch Steuerbescheid – § 355 Abs. 1 S. 1 AO', reg: 'ao', n: 1, u: 'm', m: 'post', ...BEK, name: 'Einspruchsfrist', ob: 'Der Einspruch müsste fristgerecht eingelegt worden sein.', rule: 'Gem. § 355 Abs. 1 S. 1 AO ist der Einspruch innerhalb eines Monats nach Bekanntgabe des Verwaltungsakts einzulegen.', rbb: '§ 356 Abs. 2 S. 1 AO', wv: '§ 110 AO', rb: ['Der', 'eingegangene', 'Einspruch'], el: 'Einspruch eingegangen am' },
+  { id: 'bgb', l: 'Widerruf Verbrauchervertrag – § 355 Abs. 2 S. 1 BGB', reg: 'bgb', n: 14, u: 'd', m: 'direct', modes: ['direct'], name: 'Widerrufsfrist', ev: 'der Vertragsschluss bzw. der Erhalt der Ware', tg: 'des Vertragsschlusses bzw. Warenerhalts', st: 'Fristauslöser', dl: 'Vertragsschluss bzw. Erhalt der Ware am', ob: 'Der Widerruf müsste fristgerecht erklärt worden sein.', rule: 'Gem. § 355 Abs. 2 S. 1 BGB beträgt die Widerrufsfrist 14 Tage; sie beginnt grundsätzlich mit Vertragsschluss (§ 355 Abs. 2 S. 2 BGB), beim Verbrauchsgüterkauf mit Erhalt der Ware (§ 356 Abs. 2 Nr. 1 BGB).', rb: ['Der', 'abgesandte', 'Widerruf'], el: 'Widerruf abgesandt am', note: 'Zur Fristwahrung genügt die rechtzeitige Absendung (§ 355 Abs. 1 S. 5 BGB).' }
+];
+{ let g; P.forEach(p => { p.g = p.g || g; g = p.g; }); }
+const PM = Object.fromEntries(P.map(p => [p.id, p]));
+
+const NW = ['', 'ein', 'zwei', 'drei', 'vier', 'fünf', 'sechs', 'sieben', 'acht', 'neun', 'zehn', 'elf', 'zwölf'];
+const U1 = { d: 'Tag', w: 'Woche', m: 'Monat', y: 'Jahr' }, UN = { d: 'Tage', w: 'Wochen', m: 'Monate', y: 'Jahre' };
+const durS = (n, u) => `${n} ${n === 1 ? U1[u] : UN[u]}`;
+const durT = (n, u) => n === 1 ? { d: 'einen Tag', w: 'eine Woche', m: 'einen Monat', y: 'ein Jahr' }[u] : `${n <= 12 ? NW[n] : n} ${UN[u]}`;
+const ORD = { 3: 'dritten', 4: 'vierten' };
+
+function compute(i) {
+  const p = PM[i.preset] || PM.free, R = REG[i.reg], F = FAM[R.fam], L = i.land;
+  if (i.date == null) return { error: 'Bitte ein gültiges Datum eingeben.' };
+  const jf = !!(i.rbb && p.rbb);
+  let n = jf ? 1 : i.n, u = jf ? 'y' : i.unit;
+  if (!Number.isInteger(n) || n < 1 || n > 999) return { error: 'Bitte eine Fristdauer zwischen 1 und 999 eingeben.' };
+  const kind = R.eo ? 'e' : i.kind;
+  const mode = kind === 'b' ? 'direct' : i.mode;
+  const fristName = jf ? 'Jahresfrist' : p.name;
+  const st = [], steps = [], tx = [];
+  if (p.ob) tx.push(p.ob);
+  tx.push(jf ? `Da die Rechtsbehelfsbelehrung unterblieben oder unrichtig erteilt ist, gilt gem. ${p.rbb} die Jahresfrist.` : (p.rule || `Die Frist beträgt ${durT(n, u)}.`));
+  let ev = i.date, tg = p.tg, base = null, fik = null, days = 0;
+  if (mode !== 'direct') {
+    base = i.date; days = base >= dn(2025, 1, 1) ? 4 : 3; fik = base + days;
+    const zu = mode === 'ein', what = zu ? 'zugestellt' : 'bekannt gegeben';
+    tg = zu ? 'der Zustellung' : 'der Bekanntgabe';
+    const norm = mode === 'post' ? F.post : mode === 'elek' ? F.elek : (p.ein || F.ein);
+    const zug = zu ? '§ 4 Abs. 2 S. 2 Hs. 2 VwZG' : mode === 'elek' ? (F.zugE || F.zug) : F.zug;
+    const v1 = mode === 'elek' ? 'elektronisch übermittelt (abgesendet)' : zu ? 'mittels Übergabe-Einschreiben zur Post gegeben' : 'als einfacher Brief zur Post gegeben';
+    const v2 = mode === 'elek' ? 'nach der Absendung' : 'nach der Aufgabe zur Post';
+    tx.push(`${p.doc || 'Der Bescheid'} wurde am ${fmtK(base)} ${v1}. Gem. ${norm} gilt er am ${ORD[days]} Tag ${v2}, mithin am ${fmtK(fik)}, als ${what}${days === 3 ? ' (Rechtslage vor dem 1.1.2025)' : ''}.`);
+    st.push({ l: mode === 'elek' ? 'Absendung' : 'Aufgabe zur Post', d: base, seg: 'post', em: `${days} Tage` });
+    const w = why(fik, L);
+    let x = `${fmtS(base)} + ${days} Tage = ${fmtS(fik)}`, nn = norm;
+    ev = fik;
+    if (w) {
+      if (i.fikShift) {
+        ev = nextWork(fik, L).n;
+        tx.push(`Da dieser Tag ${whyK(w, fik, L)} ist, verschiebt sich die ${zu ? 'Zustellung' : 'Bekanntgabe'} ${F.str ? 'nach verbreiteter, aber umstrittener Ansicht ' : ''}entsprechend ${F.fs} auf den nächsten Werktag, den ${fmtK(ev)}.`);
+        st.push({ l: 'Fiktionstag', d: fik, c: 'skip', seg: 'shift' });
+        x += `; ${whyS(w)}, daher nächster Werktag`;
+        nn += `; ${F.fs}${F.str ? ' analog (str.)' : ''}`;
+      } else {
+        tx.push(`Dass dieser Tag ${whyK(w, fik, L)} ist, bleibt nach der Gegenansicht unberücksichtigt, da die ${zu ? 'Zustellungs' : 'Bekanntgabe'}fiktion keine Frist ist (str.).`);
+        x += `; ${whyS(w)}, keine Verschiebung (str.)`;
+      }
+    }
+    if (zug) tx.push(`Anhaltspunkte für einen späteren Zugang (${zug}) sind nicht ersichtlich.`);
+    steps.push({ c: 'var(--ink)', h: zu ? 'Zustellung (Fiktion)' : 'Bekanntgabe (Fiktion)', d: ev, n: nn, x });
+    st.push({ l: zu ? 'Zustellung' : 'Bekanntgabe', d: ev, seg: 'gap' });
+  } else if (kind === 'e') {
+    tx.push(`Fristauslösendes Ereignis ist ${p.ev} am ${fmtK(ev)}.`);
+    steps.push({ c: 'var(--ink)', h: 'Fristauslösendes Ereignis', d: ev, x: cap(p.ev) });
+    st.push({ l: p.st, d: ev, seg: 'gap' });
+  }
+  const B = kind === 'e' ? ev + 1 : ev;
+  tx.push(`Die Fristberechnung richtet sich nach ${R.chain}.${p.calc ? ' ' + p.calc : ''}`);
+  const bn = R.b(u, kind);
+  tx.push(kind === 'e'
+    ? `Der Tag ${tg} wird nicht mitgerechnet (${bn}); die Frist beginnt am ${fmtK(B)} um 0:00 Uhr.`
+    : `Der Anfangstag wird mitgerechnet (${bn}); die Frist beginnt am ${fmtK(B)} um 0:00 Uhr.`);
+  steps.push({ c: 'var(--blue)', h: 'Fristbeginn, 0:00 Uhr', d: B, n: bn, x: kind === 'e' ? `Tag ${tg} zählt nicht mit` : 'Anfangstag zählt mit' });
+  st.push({ l: 'Fristbeginn', d: B, seg: 'main', em: durS(n, u) });
+  const r = endOf(ev, n, u, kind), raw = r.raw, en = R.e(u, kind, r.m3);
+  tx.push(r.m3
+    ? `Da der letzte Monat keinen entsprechenden Tag hat, endet sie gem. ${en} mit Ablauf des letzten Tages dieses Monats, also mit Ablauf des ${fmtK(raw)}.`
+    : `Sie endet gem. ${en} mit Ablauf des ${fmtK(raw)}.`);
+  const w = why(raw, L);
+  let end = raw, shifted = false, skipped = [];
+  const rawX = durS(n, u) + (r.m3 ? '; entsprechender Tag fehlt, daher Monatsletzter' : '');
+  if (w && i.shift) {
+    const nw = nextWork(raw, L); end = nw.n; skipped = nw.skipped; shifted = true;
+    tx.push(`Da dieser Tag ${whyK(w, raw, L)} ist, endet die Frist gem. ${R.s} erst mit Ablauf des nächsten Werktags, also mit Ablauf des ${fmtK(end)}.`);
+    steps.push({ c: 'var(--amber)', h: 'Rechnerisches Fristende', d: raw, n: en, x: rawX });
+    steps.push({ c: 'var(--red)', h: 'Fristende, 24:00 Uhr', d: end, n: R.s, x: skipped.map(s => `${fmtS(s)}: ${whyS(why(s, L))}`).join('; ') });
+    st.push({ l: 'Rechn. Ende', d: raw, c: 'skip', seg: 'shift' }, { l: 'Fristende', d: end, c: 'end' });
+  } else {
+    if (w) tx.push(`Eine Verschiebung nach ${R.s} findet nicht statt, obwohl dieser Tag ${whyK(w, raw, L)} ist.`);
+    steps.push({ c: 'var(--red)', h: 'Fristende, 24:00 Uhr', d: end, n: en, x: rawX + (w ? `; ${whyS(w)}, keine Verschiebung` : '') });
+    st.push({ l: 'Fristende', d: end, c: 'end' });
+  }
+  let eOk = null;
+  const E = i.eingang;
+  if (E != null) {
+    eOk = E <= end;
+    const [a, adj, no] = p.rb;
+    const diff = Math.abs(end - E), tg2 = diff === 1 ? 'Tag' : 'Tage';
+    tx.push(eOk
+      ? `${a} am ${fmtN(E)} ${adj} ${no} wahrt somit die ${fristName}.`
+      : `${a} am ${fmtN(E)} ${adj} ${no} ist somit verfristet.${p.wv ? ` In Betracht kommt allenfalls eine Wiedereinsetzung in den vorigen Stand (${p.wv}).` : ''}`);
+    steps.push({ c: eOk ? 'var(--green)' : 'var(--red)', h: eOk ? 'Eingang: fristgerecht' : 'Eingang: verfristet', d: E, x: eOk ? (diff === 0 ? 'am letzten Tag der Frist' : `${diff} ${tg2} vor Fristablauf`) : `${diff} ${tg2} nach Fristablauf${p.wv ? '; Wiedereinsetzung prüfen (' + p.wv + ')' : ''}` });
+    if (eOk) {
+      const k = st.findIndex(s => s.d > E || s.c === 'end');
+      if (k <= 0) st.unshift({ l: 'Eingang', d: E, c: 'ok', seg: 'gap' });
+      else st.splice(k, 0, { l: 'Eingang', d: E, c: 'ok', seg: st[k - 1].seg });
+    } else {
+      st[st.length - 1].seg = 'late';
+      st.push({ l: 'Eingang', d: E, c: 'late' });
+    }
+  } else {
+    tx.push(`Die ${fristName} endet somit mit Ablauf des ${fmtK(end)}.`);
+  }
+  return { end, raw, B, ev, base, fik, kind, mode, shifted, skipped, fristName, st, steps, text: tx.join(' '), eOk, eing: E, regS: R.s, land: L };
+}
+// CORE-END
+
+if (typeof document === 'undefined') { globalThis.__core = { compute, holidays, endOf, dn, fmtN, fmtS, easter, why }; }
+else {
+const $ = id => document.getElementById(id);
+const els = {}; ['preset', 'mode', 'date', 'fik', 'n', 'unit', 'land', 'reg', 'shift', 'rbb', 'eing'].forEach(k => els[k] = $(k));
+const MH = {
+  direct: 'Tatsächlicher Zugang, Zustellung mit Zustellungsurkunde (§ 3 VwZG: Datum auf der Urkunde), gegen Empfangsbekenntnis (§ 5 VwZG) oder ein sonstiges Ereignis.',
+  post: 'Gilt am vierten Tag nach Aufgabe zur Post als bekannt gegeben (bis 31.12.2024: dritter Tag).',
+  elek: 'Gilt am vierten Tag nach der Absendung als bekannt gegeben (bis 31.12.2024: dritter Tag).',
+  ein: 'Gilt am vierten Tag nach Aufgabe zur Post als zugestellt (§ 4 Abs. 2 S. 2 VwZG; bis 31.12.2024: dritter Tag).'
+};
+const LH = {
+  SN: 'Fronleichnam gilt nur in einzelnen Gemeinden (Landkreis Bautzen) und ist hier nicht berücksichtigt.',
+  TH: 'Fronleichnam gilt nur in einzelnen Gemeinden (v. a. Eichsfeld) und ist hier nicht berücksichtigt.',
+  BY: 'Mariä Himmelfahrt (15.8.) ist nur in Gemeinden mit überwiegend katholischer Bevölkerung Feiertag.',
+  BYE: 'Ohne Mariä Himmelfahrt (15.8.).',
+  BYA: 'Mit Augsburger Hohem Friedensfest (8.8.) und Mariä Himmelfahrt.'
+};
+const t0 = new Date(), today = dn(t0.getFullYear(), t0.getMonth() + 1, t0.getDate());
+const iso = n => { const [y, m, d] = ymd(n); return `${y}-${p2(m)}-${p2(d)}`; };
+const parse = v => { if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return null; const [y, m, d] = v.split('-').map(Number); return dn(y, m, d); };
+const kind = () => document.querySelector('input[name=kind]:checked').value;
+const setKind = v => { $(v === 'b' ? 'kb' : 'ke').checked = true; };
+const shortD = (n, endY) => { const [y, m, d] = ymd(n); return `${WS[wd(n)]} ${p2(d)}.${p2(m)}.${y !== endY ? String(y).slice(2) : ''}`; };
+
+let groups = '', cur = null;
+P.forEach(p => { if (p.g !== cur) { groups += (cur ? '</optgroup>' : '') + `<optgroup label="${p.g}">`; cur = p.g; } groups += `<option value="${p.id}">${p.l}</option>`; });
+els.preset.innerHTML = groups + '</optgroup>';
+els.land.innerHTML = LANDS.map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
+els.reg.innerHTML = Object.entries(REG).map(([k, v]) => `<option value="${k}">${v.l}</option>`).join('');
+let saved = null; try { saved = localStorage.getItem('fristenrechner.land'); } catch (e) {}
+els.land.value = saved && LN[saved] ? saved : 'NI';
+
+function applyPreset(id) {
+  const p = PM[id];
+  els.reg.value = p.reg; els.n.value = p.n; els.unit.value = p.u; setKind('e');
+  els.mode.value = p.m; els.rbb.checked = false;
+}
+function toFree() { if (els.preset.value !== 'free') els.preset.value = 'free'; }
+function sync() {
+  const p = PM[els.preset.value], R = REG[els.reg.value];
+  $('kb').disabled = !!R.eo; if (R.eo && kind() === 'b') setKind('e');
+  let modes = FM[R.fam].filter(m => !p.modes || p.modes.includes(m));
+  if (kind() === 'b') modes = ['direct'];
+  [...els.mode.options].forEach(o => { o.disabled = !modes.includes(o.value); });
+  if (!modes.includes(els.mode.value)) els.mode.value = modes[0];
+  const m = els.mode.value, fic = m !== 'direct';
+  $('fikWrap').hidden = !fic;
+  $('modeHint').textContent = MH[m];
+  $('dateL').textContent = kind() === 'b' ? 'Anfangstag der Frist' : m === 'elek' ? 'Absendung am' : fic ? 'Aufgabe zur Post am' : p.dl;
+  $('rbbWrap').hidden = !p.rbb; if (!p.rbb) els.rbb.checked = false;
+  $('rbbNorm').textContent = p.rbb ? `(${p.rbb})` : '';
+  els.n.disabled = els.unit.disabled = els.rbb.checked;
+  $('pNote').textContent = p.note || ''; $('pNote').hidden = !p.note;
+  $('eingL').textContent = p.el;
+  $('landHint').textContent = LH[els.land.value] || 'Maßgeblich sind die Feiertage am Ort, an dem die Handlung vorzunehmen ist.';
+}
+
+function calHTML(y, m, r) {
+  const first = dn(y, m, 1), len = dim(y, m), off = (wd(first) + 6) % 7;
+  let h = `<div class="calm"><h3>${MN[m - 1]} ${y}</h3><div class="cal">` + ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map(x => `<span class="h">${x}</span>`).join('');
+  for (let k = 0; k < off; k++) h += '<span></span>';
+  for (let d = 1; d <= len; d++) {
+    const n = first + d - 1, w = why(n, r.land), c = ['d'];
+    if (n >= r.B && n <= r.end) c.push('in');
+    if (w) c.push(w.t === 'h' ? 'hol' : 'we');
+    if (r.kind === 'e' && n === r.ev) c.push('ev');
+    if (r.base != null && n === r.base) c.push('ev2');
+    if (r.shifted && n === r.raw) c.push('raw');
+    if (n === r.end) c.push('end');
+    if (r.eing != null && n === r.eing) c.push('eing');
+    if (n === today) c.push('today');
+    h += `<span class="${c.join(' ')}"${w && w.t === 'h' ? ` title="${w.name}"` : ''}>${d}</span>`;
+  }
+  return h + '</div></div>';
+}
+
+function render() {
+  const i = { preset: els.preset.value, mode: els.mode.value, date: parse(els.date.value), fikShift: els.fik.checked, n: parseInt(els.n.value, 10), unit: els.unit.value, kind: kind(), land: els.land.value, reg: els.reg.value, shift: els.shift.checked, rbb: els.rbb.checked, eingang: parse(els.eing.value) };
+  const r = compute(i);
+  $('err').hidden = !r.error; $('out').hidden = !!r.error; $('err').textContent = r.error || '';
+  if (r.error) { $('ktext').textContent = r.error; $('barDate').textContent = '–'; $('barLeft').textContent = ''; return; }
+  const d = r.end - today;
+  const cd = d > 1 ? `noch ${d} Tage` : d === 1 ? 'noch 1 Tag' : d === 0 ? 'läuft heute ab' : `seit ${-d} ${d === -1 ? 'Tag' : 'Tagen'} abgelaufen`;
+  let v = r.end - 7; while (why(v, r.land)) v--;
+  $('lead').textContent = `${r.fristName} endet am`;
+  $('big').textContent = fmtL(r.end);
+  $('chips').innerHTML = `<span class="chip">Ablauf 24:00 Uhr</span><span class="chip ${d < 0 ? 'red' : d <= 7 ? 'amber' : ''}">${cd}</span><span class="chip">Vorfrist ${fmtS(v)}</span>` + (r.eing != null ? `<span class="chip ${r.eOk ? 'green' : 'red'}">${r.eOk ? 'Eingang fristgerecht' : 'Eingang verfristet'}</span>` : '');
+  $('shiftNote').hidden = !r.shifted;
+  if (r.shifted) $('shiftNote').textContent = `Rechnerisch ${fmtS(r.raw)}, verschoben nach ${r.regS}`;
+  const endY = ymd(r.end)[0];
+  $('metro').innerHTML = r.st.map(s => `<li class="${s.c || ''}${s.em ? ' em' : ''}">${s.seg ? `<i class="ln ${s.seg}">${s.em ? `<em>${s.em}</em>` : ''}</i>` : ''}<b>${s.l}</b><span>${shortD(s.d, endY)}</span></li>`).join('');
+  $('steps').innerHTML = r.steps.map(s => `<li style="--c:${s.c}"><div class="top"><b>${s.h}</b><time>${fmtS(s.d)}</time></div>${s.n ? `<span class="nm">${s.n}</span>` : ''}${s.x ? `<p>${s.x}</p>` : ''}</li>`).join('');
+  const ms = [], add = n => { const [y, m] = ymd(n); const k = y * 12 + m; if (!ms.some(x => x.k === k)) ms.push({ k, y, m }); };
+  const startN = r.base != null ? r.base : r.ev;
+  if (r.end - startN <= 45) add(startN);
+  add(r.raw); add(r.end);
+  ms.sort((a, b) => a.k - b.k);
+  $('cal').innerHTML = ms.slice(-2).map(x => calHTML(x.y, x.m, r)).join('');
+  $('ktext').textContent = r.text;
+  $('copyMsg').textContent = '';
+  const hs = [...holidays(endY, r.land)].sort((a, b) => a[0] - b[0]);
+  $('holH').textContent = `Feiertage ${endY} – ${LN[r.land]}`;
+  $('holT').innerHTML = hs.map(([n, name]) => { const inr = n >= r.B && n <= r.end; return `<tr class="${inr ? 'inr' : ''}"><td>${fmtS(n)}</td><td>${name}${inr ? ' <small>im Fristlauf</small>' : ''}</td></tr>`; }).join('');
+  $('barName').textContent = r.fristName;
+  $('barDate').textContent = fmtS(r.end);
+  $('barLeft').textContent = cd;
+}
+
+function reset() {
+  applyPreset(els.preset.value);
+  els.date.value = iso(today); els.eing.value = ''; els.fik.checked = true; els.shift.checked = true;
+  sync(); render();
+}
+
+els.preset.addEventListener('change', () => { applyPreset(els.preset.value); sync(); render(); });
+['n', 'unit', 'reg'].forEach(k => els[k].addEventListener('change', () => { toFree(); sync(); render(); }));
+els.n.addEventListener('input', () => { toFree(); sync(); render(); });
+document.querySelectorAll('input[name=kind]').forEach(x => x.addEventListener('change', () => { toFree(); sync(); render(); }));
+['mode', 'fik', 'land', 'shift', 'rbb'].forEach(k => els[k].addEventListener('change', () => { sync(); render(); }));
+['date', 'eing'].forEach(k => { els[k].addEventListener('input', render); els[k].addEventListener('change', render); });
+els.land.addEventListener('change', () => { try { localStorage.setItem('fristenrechner.land', els.land.value); } catch (e) {} });
+$('f').addEventListener('submit', e => e.preventDefault());
+$('reset').addEventListener('click', reset);
+$('copy').addEventListener('click', async () => {
+  const t = $('ktext').textContent;
+  try { await navigator.clipboard.writeText(t); $('copyMsg').textContent = 'Kopiert.'; }
+  catch (e) {
+    const s = getSelection(), rg = document.createRange(); rg.selectNodeContents($('ktext')); s.removeAllRanges(); s.addRange(rg);
+    $('copyMsg').textContent = 'Text ist markiert – mit Strg+C bzw. Cmd+C kopieren.';
+  }
+});
+const barObs = new IntersectionObserver(es => es.forEach(e => $('bar').classList.toggle('on', !e.isIntersecting && e.boundingClientRect.top < 0)));
+barObs.observe($('big'));
+
+els.preset.value = 'wspr';
+applyPreset('wspr');
+els.date.value = iso(today);
+sync(); render();
+}
+}
+</script>
+</body>
+</html>
