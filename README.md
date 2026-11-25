@@ -12,3 +12,17 @@
 - Prüfung der Fristwahrung und Klausurformulierung im Gutachtenstil
 
 Lernhilfe zur Prüfungsvorbereitung, keine Rechtsberatung.
+
+## Android-App
+
+`android/` enthält eine schlanke Android-App (WebView), die `fristenrechner/` offline aus den App-Assets lädt – ohne Internet-Berechtigung. Web-Seite und App nutzen dieselbe `index.html`.
+
+Bauen (JDK 17+, Android SDK mit Plattform 35):
+
+```bash
+cd android
+./gradlew assembleRelease
+# APK: app/build/outputs/apk/release/app-release.apk
+```
+
+Ohne `android/keystore.properties` (storeFile, storePassword, keyAlias, keyPassword) wird mit dem Debug-Schlüssel signiert. Die Schrift Figtree liegt unter der SIL Open Font License bei (`fristenrechner/fonts/OFL.txt`).

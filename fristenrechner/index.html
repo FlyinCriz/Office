@@ -5,9 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Fristenrechner</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 /* VOICE work tool for exam prep in German administrative law: calm, exact, dense
    IDEA a transit line: the Frist travels station to station (Aufgabe zur Post, Bekanntgabe, Fristbeginn, Fristende)
@@ -15,6 +12,7 @@
    COLOUR white / night #0e1116 ground, black ink, line blue #0a5cff, amber for shifts, red for Fristende, green for ok
    TYPE Figtree 800 + Figtree
    LAYOUT laptop: form column left, result right (date, line, steps + calendar); phone: title, result, form, sticky result bar */
+@font-face{font-family:Figtree;font-style:normal;font-weight:300 900;font-display:swap;src:url(fonts/figtree.woff2) format("woff2")}
 :root{color-scheme:light dark;--bg:light-dark(#ffffff,#0e1116);--ink:light-dark(#0e1116,#eef1f5);--mute:light-dark(#566170,#9ba6b5);--line:light-dark(#e2e6eb,#252c36);--edge:light-dark(#c3cbd5,#3b4552);--panel:light-dark(#f3f5f8,#161b23);--blue:light-dark(#0a5cff,#5b93ff);--red:light-dark(#e6261f,#ff5c55);--onred:light-dark(#ffffff,#0e1116);--amber:#ffb400;--green:light-dark(#00a05a,#30cf87);--greenInk:light-dark(#00703f,#5be3a5)}
 :root[data-theme=light]{color-scheme:light}
 :root[data-theme=dark]{color-scheme:dark}
@@ -652,6 +650,7 @@ $('f').addEventListener('submit', e => e.preventDefault());
 $('reset').addEventListener('click', reset);
 $('copy').addEventListener('click', async () => {
   const t = $('ktext').textContent;
+  if (window.AndroidBridge) { try { window.AndroidBridge.copy(t); $('copyMsg').textContent = 'Kopiert.'; return; } catch (e) {} }
   try { await navigator.clipboard.writeText(t); $('copyMsg').textContent = 'Kopiert.'; }
   catch (e) {
     const s = getSelection(), rg = document.createRange(); rg.selectNodeContents($('ktext')); s.removeAllRanges(); s.addRange(rg);
